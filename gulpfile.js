@@ -12,6 +12,8 @@ var gulp = require('gulp'),
   pngquant = require('imagemin-pngquant'),
   rimraf = require('rimraf'),
   browserSync = require("browser-sync"),
+  jade = require('gulp-jade'),
+  gutil = require('gulp-util'),
   reload = browserSync.reload;
 
 // Так же создадим js объект в который пропишем все нужные нам пути,
@@ -19,6 +21,7 @@ var gulp = require('gulp'),
 
 var path = {
   build: { //Тут мы укажем куда складывать готовые после сборки файлы
+    jade: 'build/',
     html: 'build/',
     js: 'build/js/',
     css: 'build/css/',
@@ -26,6 +29,7 @@ var path = {
     fonts: 'build/fonts/'
   },
   src: { //Пути откуда брать исходники
+    jade: 'src/*.jade', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
     html: 'src/*.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
     js: 'src/js/main.js',//В стилях и скриптах нам понадобятся только main файлы
     style: 'src/style/main.scss',
@@ -33,6 +37,7 @@ var path = {
     fonts: 'src/fonts/**/*.*'
   },
   watch: { //Тут мы укажем, за изменением каких файлов мы хотим наблюдать
+    jade: 'src/**/*.jade',
     html: 'src/**/*.html',
     js: 'src/js/**/*.js',
     style: 'src/style/**/*.scss',
@@ -53,12 +58,22 @@ var config = {
 gulp.task('webserver', function () {
   browserSync(config);
 });
-gulp.task('html:build', function () {
+
+
+/*gulp.task('html:build', function () {
   gulp.src(path.src.html) //Выберем файлы по нужному пути
     .pipe(rigger()) //Прогоним через rigger
     .pipe(gulp.dest(path.build.html)) //Выплюнем их в папку build
     .pipe(reload({stream: true})); //И перезагрузим наш сервер для обновлений
+});*/
+gulp.task('jade:build', function(){
+  gulp.src(path.src.jade)
+    .pipe(jade().on('error', gutil.log) .on('error', gutil.beep))
+    .pipe(gulp.dest(path.build.jade))
+    .pipe(reload({stream: true})); //И перезагрузим наш сервер для обновлений
 });
+
+
 gulp.task('js:build', function () {
   gulp.src(path.src.js) //Найдем наш main файл
     .pipe(rigger()) //Прогоним через rigger
@@ -71,7 +86,7 @@ gulp.task('js:build', function () {
 gulp.task('style:build', function () {
   gulp.src(path.src.style) //Выберем наш main.scss
     .pipe(sourcemaps.init()) //То же самое что и с js
-    .pipe(sass()) //Скомпилируем
+    .pipe(sass().on('error', gutil.log) .on('error', gutil.beep)) //Скомпилируем
     .pipe(prefixer()) //Добавим вендорные префиксы
     .pipe(cssmin()) //Сожмем
     .pipe(sourcemaps.write())
@@ -98,9 +113,12 @@ gulp.task('fonts:build', function() {
 });
 
 gulp.task('watch', function(){
-  watch([path.watch.html], function(event, cb) {
+  /*watch([path.watch.html], function(event, cb) {
     gulp.start('html:build');
-  });
+  });*/
+  watch([path.watch.jade], function(event, cb) {
+   gulp.start('jade:build');
+   });
   watch([path.watch.style], function(event, cb) {
     gulp.start('style:build');
   });
@@ -115,47 +133,11 @@ gulp.task('watch', function(){
   });
 });
 gulp.task('build', [
-  'html:build',
+  /*'html:build',*/
+  'jade:build',
   'js:build',
   'style:build',
   'fonts:build',
   'image:build'
 ]);
-
-
-/*
-gulp.task("webserver", function () {
-  browserSync({
-    server: {
-      baseDir: "./build"
-    },
-    host: 'localhost',
-    port: 3000,
-    tunnel: true
-  });
-});
-gulp.task('html:build', function () {
-  gulp.src(path.src.html) // Выберем файлы
-    .pipe(rigger())
-    .pipe(gulp.dest(path.build.html)) // сборка в папку build
-    .pipe(reload({stream: true})); // перезапускаем сервер
-});
-gulp.task('js:build', function () {
-  gulp.src(path.src.js) // найдём наш main файл
-    .pipe(rigger()) // прогоним через rigger
-    .pipe(sourceMaps.init()) //инициализация sourceMaps
-    .pipe(uglify()) // Минификация
-    .pipe(sourceMaps.write()) // Прописка карты
-    .pipe(gulp.dest(path.build.js)) // запишем результирующий файл в build/
-    .pipe(reload({stream:true})); // перезапуск localhost
-});
-gulp.task('style:build', function (){
-  gulp.src(path.src.style) // Выберем нам main.scss
-    .pipe(sourceMaps.init())
-    .pipe(sass()) //Процес компиляции
-    .pipe(preFixer()) //Префиксы для всех браузеров
-    .pipe(cssMin()) //Минификация
-    .pipe(sourceMaps.write())
-    .pipe(gulp.dest(path.build.css)) //Запишем в папку build
-    .pipe(reload({stream: true}));
-});*/
+gulp.task('default', ['build', 'webserver', 'watch']);
