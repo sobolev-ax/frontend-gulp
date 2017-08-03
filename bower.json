@@ -17,5 +17,9 @@
   "dependencies": {
 	"normalize.css": "*",
 	"jquery": "2.*"
+  },
+  "devDependencies": {
+    "ie-classlist": "^1.1.20170427",
+    "scrollspy": "^0.1.3"
   }
 }
